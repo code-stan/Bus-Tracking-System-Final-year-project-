@@ -1,0 +1,19 @@
+.large-bus{
+    transform: rotateY(-180deg);
+    height: 50px !important;
+    scale: 1.3;
+}
+.transit{
+    display: flex;
+    flex-direction: column;
+
+    h3{
+        margin-top: auto;
+    }
+}
+.transit:has(.large-bus){
+    overflow: clip;
+}
+.luxury{
+    transform: rotateY(-180deg)
+}

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Radar from "radar-sdk-js";
+import { BookingPropTypes } from "@/types/booking.types";
 
 Radar.initialize(process.env.NEXT_PUBLIC_RADAR_TEST_PUBLISHABLE || "");
 
@@ -8,19 +9,21 @@ interface RadarAddress {
 	placeLabel: string;
 	country: string;
 	formattedAddress: string;
+	location: {
+		latitude: number;
+		longitude: number;
+	};
 }
 
 interface RadarAutocompleteResponse {
 	addresses: RadarAddress[];
 }
 
-const AutoCompleteAddress = () => {
-	const [whereFrom, setWhereFrom] = useState("");
-	const [whereTo, setWhereTo] = useState("");
-	const [fromSuggestions, setFromSuggestions] = useState<string[]>([]);
-	const [toSuggestions, setToSuggestions] = useState<string[]>([]);
+const AutoCompleteAddress = ({ whereFrom, setWhereFrom, whereTo, setWhereTo, setFromCoords, setToCoords }: BookingPropTypes) => {
+	const [fromSuggestions, setFromSuggestions] = useState<RadarAddress[]>([]);
+	const [toSuggestions, setToSuggestions] = useState<RadarAddress[]>([]);
 
-	const handleAutocomplete = async (query: string, setSuggestions: React.Dispatch<React.SetStateAction<string[]>>) => {
+	const handleAutocomplete = async (query: string, setSuggestions: React.Dispatch<React.SetStateAction<RadarAddress[]>>) => {
 		if (!query) {
 			setSuggestions([]);
 			return;
@@ -33,17 +36,15 @@ const AutoCompleteAddress = () => {
 				limit: 20,
 			});
 
-			const suggestions = (result as RadarAutocompleteResponse).addresses
-				.map((address) => {
-					const formattedAddress = `${address?.placeLabel}, ${address?.formattedAddress}` || "";
-					return formattedAddress;
-				})
-				.filter((suggestion): suggestion is string => suggestion !== undefined);
-
-			setSuggestions(suggestions);
+			const addresses = (result as unknown as RadarAutocompleteResponse).addresses;
+			setSuggestions(addresses);
 		} catch (error) {
 			console.error("Error fetching autocomplete suggestions:", error);
 		}
+	};
+
+	const formatAddress = (address: RadarAddress) => {
+		return `${address.placeLabel}, ${address.formattedAddress}`;
 	};
 
 	return (
@@ -66,9 +67,17 @@ const AutoCompleteAddress = () => {
 				{/* Suggestions Dropdown */}
 				{fromSuggestions.length > 0 && (
 					<ul className="border-[1px] border-gray-300 mt-2 rounded-md bg-white max-h-40 overflow-auto">
-						{fromSuggestions.map((suggestion, index) => (
-							<li key={index} className="p-2 text-sm hover:bg-gray-100 cursor-pointer" onClick={() => setWhereFrom(suggestion)}>
-								{suggestion}
+						{fromSuggestions.map((address, index) => (
+							<li
+								key={index}
+								className="p-2 text-sm hover:bg-gray-100 cursor-pointer"
+								onClick={() => {
+									setWhereFrom(formatAddress(address));
+									setFromCoords(address.location); // Set coordinates
+									setFromSuggestions([]);
+								}}
+							>
+								{formatAddress(address)}
 							</li>
 						))}
 					</ul>
@@ -93,9 +102,17 @@ const AutoCompleteAddress = () => {
 				{/* Suggestions Dropdown */}
 				{toSuggestions.length > 0 && (
 					<ul className="border-[1px] border-gray-300 mt-2 rounded-md bg-white max-h-40 overflow-auto">
-						{toSuggestions.map((suggestion, index) => (
-							<li key={index} className="p-2 text-sm hover:bg-gray-100 cursor-pointer" onClick={() => setWhereTo(suggestion)}>
-								{suggestion}
+						{toSuggestions.map((address, index) => (
+							<li
+								key={index}
+								className="p-2 text-sm hover:bg-gray-100 cursor-pointer"
+								onClick={() => {
+									setWhereTo(formatAddress(address));
+									setToCoords(address.location); // Set coordinates
+									setToSuggestions([]);
+								}}
+							>
+								{formatAddress(address)}
 							</li>
 						))}
 					</ul>
